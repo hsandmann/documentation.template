@@ -6,16 +6,16 @@
     2025.1
 
 
-## KIT-P
+## KIT-I
 
-João da Silva
+Luiza Teodoro de Abreu Coutinho
 
-Pedro de Souza
+Gabriel Pessine Buhrer
 
 
 ## Entregas
 
-- [x] Roteiro 1 - Data 23/02/2025
+- [ ] Roteiro 1
 - [ ] Roteiro 2
 - [ ] Roteiro 3
 - [ ] Roteiro 4
