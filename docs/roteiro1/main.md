@@ -678,6 +678,6 @@ Depois de fazermos algumas ações manualmente e fixarmos bem os conceitos, quan
 
 ## Conclusão
 
-Por meio deste roteiro, pudemos compreender a complexidade das redes de computadores, bem como sua importância para projetos que demandam escalabilidade e eficiência. A exploração de ferramentas como o MAAS (Metal as a Service), o Ansible e o Nginx nos permitiu compreender conceitos sobre gerenciamento de hardware, automação de tarefas e redes, destacando a relevância de aplicações robustas nesse contexto. Essa base teórica e prática esclareceu aspectos essenciais da computação em nuvem e abre caminho para futuros aprofundamentos e aplicações em projetos mais complexos.
+Por meio deste roteiro, pudemos compreender a complexidade das redes de computadores, bem como sua importância para projetos que demandam escalabilidade e eficiência. A exploração de ferramentas como o MAAS (Metal as a Service), o Ansible e o Nginx nos permitiu compreender conceitos sobre gerenciamento de hardware, automação de tarefas e redes, destacando a relevância de aplicações robustas nesse contexto. Essa base teórica e prática esclareceu aspectos essenciais da computação em nuvem e abre caminho para futuros aprofundamentos e aplicações em projetos mais complexos. 
 
 
