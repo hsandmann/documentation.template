@@ -162,6 +162,64 @@ Relação entre as features e o alvo, e entre as features.
     Uma feature que prevê o alvo quase perfeitamente costuma ser **vazamento**: informação
     que só existe depois do fato que você quer prever. Investigue antes de comemorar.
 
+### A. Numérica × numérica
+
+**Método: Spearman.** As distribuições são muito assimétricas (assimetria de 1,32 nos preços
+e de 28,52 no `Volume`, seção 4). Além disso, o preço passa por 4,5 ordens de grandeza. O
+Pearson mede só relação linear e é dominado pelos valores extremos. O Spearman usa os postos,
+então mede qualquer relação monotônica e não é afetado pela cauda. O `Volume` entra como
+`log1p(Volume)`, a mesma escala da seção 4. Para o Spearman isso não muda nada, porque
+`log1p` preserva a ordem, mas é a escala em que o volume aparece nos gráficos.
+Estatísticas calculadas no dataset inteiro (7 764 703 minutos).
+
+| | `Open` | `High` | `Low` | `log1p(Volume)` | `Close` |
+|---|---|---|---|---|---|
+| `Open` | 1 | 1,000000 | 1,000000 | 0,1246 | 1,000000 |
+| `High` | 1,000000 | 1 | 0,999999 | 0,1248 | 1,000000 |
+| `Low` | 1,000000 | 0,999999 | 1 | 0,1244 | 1,000000 |
+| `log1p(Volume)` | 0,1246 | 0,1248 | 0,1244 | 1 | 0,1246 |
+| `Close` | 1,000000 | 1,000000 | 1,000000 | 0,1246 | 1 |
+
+![Matriz de correlação de Spearman](figures/corr_spearman.png)
+/// caption
+**Figura 3** — Correlação de Spearman entre as features e o alvo, com o `Volume` em
+`log1p`.
+///
+
+**Conclusão:** os quatro preços formam um bloco com ρ ≥ 0,999999, e o `Volume` está fora
+dele, com ρ ≈ 0,12 contra todos.
+
+![Scatter das features contra o Close](figures/scatter_close.png)
+/// caption
+**Figura 4** — `Open`, `High`, `Low` e `log1p(Volume)` contra o `Close`, numa amostra de
+100 000 minutos (`random_state=42`). Preços em escala log.
+///
+
+**Conclusão:** `Open`, `High` e `Low` desenham a mesma reta contra o `Close`, e o `Volume`
+não mostra nenhuma relação visível com o preço.
+
+- **Pares redundantes:** `Open`, `High`, `Low` e `Close` (todos os pares com ρ = 1,000000,
+  exceto `High` × `Low` com 0,999999). Num minuto o preço varia muito pouco perto da escala
+  de US$ 3,80 a US$ 126 mil, então o nível de um preço praticamente determina os outros.
+  Em nível, os três preços carregam a mesma informação, e basta um deles. A informação
+  nova está nas diferenças entre eles (`High − Low`, `Close − Open`), e não no nível.
+- **Correlação com o alvo:** ρ = 1,0 é exatamente o caso do aviso acima. Não é sinal
+  preditivo: é vazamento, porque `Open`, `High` e `Low` são do mesmo minuto do `Close`
+  (`Low ≤ Close ≤ High` por construção, seção 7).
+- **`Volume`:** relação fraca com os preços (ρ ≈ 0,12). O sinal nem é estável: o Pearson dá
+  −0,10 com o `Volume` bruto e −0,16 com o `log1p(Volume)`. Na Figura 4, as faixas
+  horizontais são os patamares de preço de cada regime, e a coluna em zero são os minutos
+  sem negócio (16,9%). O `Volume` não é redundante com nenhuma outra coluna. É a única
+  feature com informação diferente da do preço.
+
+### B. Categórica × alvo
+
+Não se aplica: o dataset não tem variáveis categóricas (seção 4B).
+
+### C. Numérica × categórica
+
+Não se aplica, pelo mesmo motivo.
+
 ## 6. Qualidade dos dados
 
 ### Valores ausentes
@@ -268,7 +326,7 @@ idêntico, no treino.
 
 ![Close diário com o corte do split](figures/close_split.png)
 /// caption
-**Figura 3** — `Close` diário (último minuto de cada dia), com o treino em azul e o teste em
+**Figura 5** — `Close` diário (último minuto de cada dia), com o treino em azul e o teste em
 laranja. A troca de cor marca o corte de 2024-01-01.
 ///
 
