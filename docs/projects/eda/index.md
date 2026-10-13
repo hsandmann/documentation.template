@@ -1,6 +1,6 @@
 ---
 project: eda
-ai_use: "none"
+ai_use: "para construir o index.md"
 ---
 
 # 1. EDA — Análise Exploratória
@@ -105,8 +105,53 @@ O alvo é o preço de fechamento `Close` (regressão).
 
 ## 4. Análise univariada
 
-Distribuição de cada feature relevante: medidas de posição e dispersão, e o formato.
-Não gere 40 histogramas; escolha os que mudam alguma decisão e explique o critério.
+### A. Numéricas
+
+As quatro features são numéricas contínuas. Estatísticas calculadas no dataset inteiro
+(7 764 703 minutos):
+
+| Feature | Média | Desvio | Mín | Q1 | Mediana | Q3 | Máx | Assimetria | % zeros |
+|---------|-------|--------|-----|----|---------|----|-----|------------|---------|
+| `Open` (USD) | 24 335 | 31 708 | 3,80 | 470,39 | 8 255,79 | 40 902 | 126 202 | 1,32 | 0% |
+| `High` (USD) | 24 343 | 31 717 | 3,80 | 470,78 | 8 262 | 40 924 | 126 272 | 1,32 | 0% |
+| `Low` (USD) | 24 327 | 31 700 | 3,80 | 470,07 | 8 250 | 40 880 | 126 158 | 1,32 | 0% |
+| `Volume` (BTC) | 4,92 | 21,46 | 0 | 0,022 | 0,441 | 2,73 | 5 853,85 | **28,52** | 16,9% |
+
+**Critério das figuras:** `Open`, `High` e `Low` têm a mesma distribuição do `Close`
+(estatísticas praticamente iguais e correlação de 1,0), então a Figura 1 já mostra a forma das
+três e repetir os histogramas não muda nenhuma decisão. A única feature com forma diferente é
+o `Volume`.
+
+- **`Open`, `High`, `Low`:** iguais ao `Close` (seção 3). Assimetria positiva (1,32), média
+  três vezes maior que a mediana, um pico perto de zero no preço bruto e, em log, vários
+  picos (um por regime de mercado). Em nível são redundantes com o alvo; a informação nova
+  está nas diferenças entre eles (`High − Low` mede a volatilidade do minuto, `Close − Open`
+  a direção), que ficam para a engenharia de features.
+
+![Distribuição do Volume e do log(Volume)](figures/Volume_hist.png)
+/// caption
+**Figura 2** — Histograma do `Volume` em BTC (esq.) e de `log(Volume)` só para os minutos com
+negócio, `Volume > 0` (dir.).
+///
+
+- **`Volume` bruto:** assimetria extrema (28,52). A mediana é 0,44 BTC, mas o máximo passa de
+  5 800 BTC, e quase todos os minutos ficam numa única barra perto de zero na Figura 2.
+- **Zeros:** 16,9% dos minutos têm `Volume = 0` (minutos sem negócio, seção 6). Eles formam
+  uma massa separada que não aparece no gráfico em log.
+- **`log(Volume)`, só `Volume > 0`:** quase simétrico (assimetria −0,38) e com **uma única
+  moda**, perto de 1 BTC por minuto (mediana de 0,84 BTC entre os minutos com negócio).
+  Ou seja, o volume é aproximadamente log-normal: em escala log ele se comporta bem, e é
+  nessa escala que deve entrar no modelo.
+
+Os outliers de cada feature estão na seção 6.
+
+### B. Categóricas
+
+O dataset **não tem variáveis categóricas**: são o tempo (`Timestamp`) e cinco colunas
+numéricas contínuas. Não há frequências nem cardinalidade a reportar, nem categorias raras
+ou de alta cardinalidade. Variáveis categóricas que podem ser derivadas do tempo (hora do
+dia, dia da semana) e o indicador de minuto sem negócio (`Volume = 0`) têm cardinalidade
+fixa e baixa (24, 7 e 2 valores) e ficam para a engenharia de features.
 
 ## 5. Análise bivariada e correlações
 
@@ -155,8 +200,29 @@ linhas.
 
 ### Outliers
 
-Como foram detectados e o que será feito com eles — e por quê. Remover outlier é decisão de
-modelagem, não faxina.
+Detectados pela regra do IQR: é outlier o valor fora de [Q1 − 1,5·IQR, Q3 + 1,5·IQR]. Nos
+preços a regra foi aplicada ao valor bruto; no `Volume`, ao `log(Volume)` dos minutos com
+negócio, porque é nessa escala que a distribuição é quase simétrica (seção 4).
+
+| Feature | Escala | Limite(s) | Outliers |
+|---------|--------|-----------|----------|
+| `Open` | bruta | > US$ 101 550 | 3,84% |
+| `High` | bruta | > US$ 101 604 | 3,84% |
+| `Low` | bruta | > US$ 101 494 | 3,84% |
+| `Volume` | bruta (só para comparação) | > 6,78 BTC | 14,06% |
+| `Volume` | log, só `Volume > 0` | < 0,0009 BTC ou > 565,9 BTC | **0,53%** dos minutos com negócio (0,515% abaixo, 0,019% acima) |
+
+**Nenhum outlier será removido:**
+
+- **Preços:** os "outliers" são todos os minutos entre 2024-12-05 e 2025-11-13 em que o
+  preço passou de cerca de US$ 101 500. Não é erro nem evento raro, é o regime mais recente
+  do mercado, e está inteiro no conjunto de teste (seção 9). Removê-los apagaria justamente
+  o período que o modelo precisa prever. O problema real é de escala, e é tratado com o
+  alvo em retorno, não com remoção.
+- **`Volume`:** na escala bruta a regra marca 14% dos minutos, mas isso é só a cauda pesada.
+  Em log, sobram 0,53%, quase todos negócios minúsculos (menos de 0,001 BTC). São negócios
+  reais. A decisão é transformar com `log1p(Volume)`, que mantém os zeros e comprime a cauda,
+  em vez de cortar pontos.
 
 ## 7. Riscos de vazamento
 
@@ -184,7 +250,8 @@ A saída desta entrega. Uma linha por transformação, ligando cada uma a um ach
 
 | # | Transformação | Features | Motivo (seção) |
 |---|---------------|----------|----------------|
-| 1 | | | |
+| 1 | `log1p` (mantém os zeros, comprime a cauda) | `Volume` | Assimetria de 28,5 e 16,9% de zeros; em log é quase simétrico e só 0,53% são outliers (seções 4 e 6) |
+| 2 | Nenhuma remoção de outliers | todas | Outliers dos preços são o regime recente (teste); os do `Volume` somem em log (seção 6) |
 
 ## 9. Estratégia de split
 
@@ -201,7 +268,7 @@ idêntico, no treino.
 
 ![Close diário com o corte do split](figures/close_split.png)
 /// caption
-**Figura 2** — `Close` diário (último minuto de cada dia), com o treino em azul e o teste em
+**Figura 3** — `Close` diário (último minuto de cada dia), com o treino em azul e o teste em
 laranja. A troca de cor marca o corte de 2024-01-01.
 ///
 
