@@ -17,9 +17,9 @@ ao longo do semestre, cada uma com data e peso próprios.
 
 | Nome completo | E-mail | GitHub |
 |---------------|--------|--------|
-| | | |
-| | | |
-| | | |
+| Theo Ribeiro França | | [TheoRibeiroFranca](https://github.com/TheoRibeiroFranca){:target='_blank'} |
+| Lucas Sato Coelho de Oliveira | | [lucassatoco](https://github.com/lucassatoco){:target='_blank'} |
+| Rafael Kauffmann | | [RafaelKauffmann](https://github.com/RafaelKauffmann){:target='_blank'} |
 
 Times de 2 a 3 pessoas. Repita esses nomes no cabeçalho de cada entrega — quem corrige pode
 abrir uma página sozinha, sem passar por aqui.
@@ -54,16 +54,20 @@ duas viáveis.
 
 | | |
 |---|---|
-| **Nome** | |
-| **Fonte (URL)** | |
-| **Licença / termos de uso** | |
-| **Amostras** | |
-| **Features** | |
-| **Variável alvo** | |
-| **Tarefa escolhida** | Classificação ou Regressão |
+| **Nome** | Bitcoin Historical Data (`btcusd_1-min_data.csv`), exchange Bitstamp |
+| **Fonte (URL)** | [Kaggle — mczielinski/bitcoin-historical-data](https://www.kaggle.com/datasets/mczielinski/bitcoin-historical-data){:target='_blank'} |
+| **Licença / termos de uso** | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/){:target='_blank'} |
+| **Amostras** | 7 764 703 minutos (2012-01-01 → 2026-10-06) |
+| **Features** | Brutas: `Open`, `High`, `Low`, `Volume`. Após o pré-processamento: `ret_1`, `amplitude`, `direcao`, `log1p(Volume)` |
+| **Variável alvo** | Retorno logarítmico do minuto seguinte, `log(Close[t+1] / Close[t])` |
+| **Tarefa escolhida** | Regressão |
 
-Justifique em 3–5 linhas: por que este dataset, e o que nele torna a tarefa escolhida
-interessante em vez de trivial.
+É uma série longa (quase 15 anos), limpa e pública, com milhões de amostras, o suficiente
+para treinar uma rede neural. O que a torna difícil em vez de trivial: prever o `Close` em
+nível é vazamento (os preços do mesmo minuto têm correlação 1,0 com ele), e o teste está num
+regime de preço que o treino nunca viu. Com o alvo em retorno, o problema vira prever a
+variação do minuto seguinte, que tem sinal fraco (Spearman de −0,11 com o retorno atual).
+Detalhes no [EDA](eda/index.md).
 
 ## Status
 
@@ -79,4 +83,9 @@ projeto.
 
 | Data | Decisão | Motivo |
 |------|---------|--------|
-| | | |
+| 2026-10-07 | Dataset: BTC/USD de 1 minuto da Bitstamp; tarefa de **regressão** | Série longa e limpa, alvo contínuo natural ([EDA §1](eda/index.md#1-dataset)) |
+| 2026-10-07 | Split **temporal** com corte em 2024-01-01 (81% treino / 19% teste) | Split aleatório colocaria minutos vizinhos, quase idênticos, em treino e teste ([EDA §9](eda/index.md#9-estrategia-de-split)) |
+| 2026-10-08 | Nenhum outlier removido; `Volume` entra como `log1p(Volume)` | Os preços "outliers" são o regime recente (teste); o `Volume` tem assimetria de 28,5 e 16,9% de zeros ([EDA §6](eda/index.md#6-qualidade-dos-dados)) |
+| 2026-10-12 | `Open`, `High` e `Low` do mesmo minuto não entram em nível | Correlação de 1,0 com o `Close`: vazamento ([EDA §5](eda/index.md#5-analise-bivariada-e-correlacoes)) |
+| 2026-10-14 | Alvo muda de `Close` para o retorno do minuto seguinte; entradas viram retornos relativos | 61,4% do teste tem preço acima do máximo do treino; retornos não dependem do patamar de preço ([EDA §10](eda/index.md#10-pre-processamento)) |
+| 2026-10-14 | Sem redução de dimensionalidade no pipeline | Só 4 features; PCA, t-SNE e UMAP usados apenas para inspeção ([EDA §10](eda/index.md#10-pre-processamento)) |
